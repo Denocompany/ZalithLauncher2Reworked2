@@ -56,8 +56,9 @@ class Version(
     val versionType: VersionType,
     /**
      * 控制是否将当前账号视为离线账号启动游戏
+     * Modificação Modo Vulkan: Sempre offline por padrão para evitar travamentos de login
      */
-    var offlineAccountLogin: Boolean = false,
+    var offlineAccountLogin: Boolean = true,
     /**
      * 快速启动
      */
