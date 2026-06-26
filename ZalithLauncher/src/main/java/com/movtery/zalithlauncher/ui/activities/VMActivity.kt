@@ -79,9 +79,10 @@ import com.movtery.zalithlauncher.game.launch.Launcher
 import com.movtery.zalithlauncher.game.launch.handler.AbstractHandler
 import com.movtery.zalithlauncher.game.launch.handler.GameHandler
 import com.movtery.zalithlauncher.game.launch.handler.HandlerType
-import com.movtery.zalithlauncher.game.launch.handler.JVMHandler
+import com.movtery.zalithlauncher.game.launch.Launcher
 import com.movtery.zalithlauncher.game.multirt.RuntimesManager
 import com.movtery.zalithlauncher.game.version.installed.Version
+import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.terracotta.TerracottaVPNService
 import com.movtery.zalithlauncher.ui.base.BaseAppCompatActivity
@@ -176,6 +177,21 @@ class VMViewModel : ViewModel() {
             bundle.getBoolean(INTENT_RUN_GAME) -> {
                 val config: LaunchConfig = bundle.getParcelableSafely(INTENT_GAME_CONFIG, LaunchConfig::class.java)
                     ?: throw IllegalStateException("No launch config has been set.")
+
+                // Verificar se VulkanMod está presente quando modo Vulkan está ativo
+                if (AllSettings.graphicsApi.value == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
+                    val modsDir = PathManager.DIR_MODS
+                    val vulkanModFiles = modsDir.listFiles { file ->
+                        file.name.startsWith("vulkanmod-") && file.name.endsWith(".jar")
+                    }
+                    
+                    if (vulkanModFiles.isNullOrEmpty()) {
+                        throw IllegalStateException(
+                            "Modo Vulkan ativo mas nenhum renderer Vulkan encontrado.\n" +
+                            "Instale o VulkanMod na pasta mods: ${modsDir.absolutePath}"
+                        )
+                    }
+                }
 
                 val launcher = GameLauncher(
                     activity = activity,

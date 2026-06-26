@@ -355,6 +355,7 @@ private fun checkAndUsedJSPH(envMap: MutableMap<String, String>, runtime: Runtim
 private fun setRendererEnv(envMap: MutableMap<String, String>) {
     val renderer = Renderers.getCurrentRenderer()
     val rendererId = renderer.getRendererId()
+    val graphicsApi = AllSettings.graphicsApi.value
 
     if (rendererId.startsWith("opengles2")) {
         envMap["LIBGL_ES"] = "2"
@@ -366,8 +367,12 @@ private fun setRendererEnv(envMap: MutableMap<String, String>) {
 
     envMap += renderer.getRendererEnv().value
 
-    renderer.getRendererEGL()?.let { eglName ->
-        envMap["POJAVEXEC_EGL"] = eglName
+    // Verificar se é modo Vulkan - se sim, não setar POJAVEXEC_EGL
+    // Isso permite que o VulkanMod use libvulkan.so diretamente sem interferência EGL
+    if (graphicsApi != com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
+        renderer.getRendererEGL()?.let { eglName ->
+            envMap["POJAVEXEC_EGL"] = eglName
+        }
     }
 
     envMap["POJAV_RENDERER"] = rendererId
