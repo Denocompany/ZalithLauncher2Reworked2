@@ -24,8 +24,6 @@ import com.movtery.zalithlauncher.BuildKeys
 import com.movtery.zalithlauncher.bridge.LoggerBridge
 import com.movtery.zalithlauncher.game.account.Account
 import com.movtery.zalithlauncher.game.account.isAuthServerAccount
-import com.movtery.zalithlauncher.game.account.isLocalAccount
-import com.movtery.zalithlauncher.game.account.offline.OfflineYggdrasilServer
 import com.movtery.zalithlauncher.game.multirt.Runtime
 import com.movtery.zalithlauncher.game.path.getAssetsHome
 import com.movtery.zalithlauncher.game.path.getLibrariesHome
@@ -55,7 +53,6 @@ private const val TAG = "LaunchArgs"
 class LaunchArgs(
     private val runtimeLibraryPath: String,
     private val account: Account,
-    private val offlineServer: OfflineYggdrasilServer,
     private val gameDirPath: File,
     private val version: Version,
     private val clientJar: File,
@@ -160,27 +157,7 @@ class LaunchArgs(
     private fun getJavaArgs(): List<String> {
         val argsList: MutableList<String> = ArrayList()
 
-        if (account.isLocalAccount()) {
-            if (account.hasSkinFile) {
-                //该离线账号拥有本地皮肤，启用离线yggdrasil服务器
-                offlineServer.start()
-                offlineServer.addCharacter(account)
-                offlineServer.getPort()?.let { port ->
-                    val msg = "Using offline Yggdrasil server on port $port"
-                    LoggerBridge.append(msg)
-                    Logger.info(TAG, msg)
-                    argsList.add("-javaagent:${LibPath.AUTHLIB_INJECTOR.absolutePath}=http://localhost:$port")
-                    argsList.add("-Dauthlibinjector.side=client")
-                } ?: run {
-                    //无法获取端口号，说明服务器未成功启动
-                    val msg = "Failed to start offline Yggdrasil server!"
-                    LoggerBridge.append(msg)
-                    Logger.warning(TAG, msg)
-                    //本次启动将被忽略，为避免浪费性能，关停服务器
-                    offlineServer.stop()
-                }
-            }
-        } else if (account.isAuthServerAccount()) {
+        if (account.isAuthServerAccount()) {
             if (account.otherBaseUrl!!.contains("auth.mc-user.com")) {
                 argsList.add("-javaagent:${LibPath.NIDE_8_AUTH.absolutePath}=${account.otherBaseUrl!!.replace("https://auth.mc-user.com:233/", "")}")
                 argsList.add("-Dnide8auth.client=true")
