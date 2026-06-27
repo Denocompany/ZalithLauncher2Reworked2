@@ -84,7 +84,7 @@ fun RendererSettingsScreen(
         Triple(NormalNavKey.Settings.Renderer, settingsScreenKey, false)
     ) { isVisible ->
         val context = LocalContext.current
-        val isVulkanMode = AllSettings.graphicsApi.state.value == GraphicsApi.VULKAN
+        val isVulkanMode = AllSettings.graphicsApi.state == GraphicsApi.VULKAN
 
         AnimatedColumn(
             modifier = Modifier
