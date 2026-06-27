@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -84,6 +85,8 @@ fun RendererSettingsScreen(
         Triple(NormalNavKey.Settings.Renderer, settingsScreenKey, false)
     ) { isVisible ->
         val context = LocalContext.current
+        val graphicsApi by AllSettings.graphicsApi.state.collectAsStateWithLifecycle()
+        val isVulkanMode = graphicsApi == GraphicsApi.VULKAN
 
         AnimatedColumn(
             modifier = Modifier
@@ -98,7 +101,7 @@ fun RendererSettingsScreen(
                         .fillMaxWidth()
                         .offset { IntOffset(x = 0, y = yOffset.roundToPx()) }
                 ) {
-                    ListSettingsCard(
+                    if (!isVulkanMode) ListSettingsCard(
                         modifier = Modifier.fillMaxWidth(),
                         position = CardPosition.Top,
                         unit = AllSettings.renderer,
