@@ -79,9 +79,11 @@ import com.movtery.zalithlauncher.game.launch.Launcher
 import com.movtery.zalithlauncher.game.launch.handler.AbstractHandler
 import com.movtery.zalithlauncher.game.launch.handler.GameHandler
 import com.movtery.zalithlauncher.game.launch.handler.HandlerType
-import com.movtery.zalithlauncher.game.launch.Launcher
+import com.movtery.zalithlauncher.game.launch.handler.JVMHandler
 import com.movtery.zalithlauncher.game.multirt.RuntimesManager
+import com.movtery.zalithlauncher.game.version.installed.GraphicsApi
 import com.movtery.zalithlauncher.game.version.installed.Version
+import com.movtery.zalithlauncher.game.version.installed.VersionFolders
 import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.terracotta.TerracottaVPNService
@@ -179,9 +181,9 @@ class VMViewModel : ViewModel() {
                     ?: throw IllegalStateException("No launch config has been set.")
 
                 // Verificar se VulkanMod está presente quando modo Vulkan está ativo
-                if (AllSettings.graphicsApi.value == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
-                    val modsDir = PathManager.DIR_MODS
-                    val vulkanModFiles = modsDir.listFiles { file ->
+                if (config.version.getGraphicsApi() == GraphicsApi.VULKAN) {
+                    val modsDir = VersionFolders.MOD.getDir(config.version.getGameDir())
+                    val vulkanModFiles = modsDir.listFiles { file: java.io.File ->
                         file.name.startsWith("vulkanmod-") && file.name.endsWith(".jar")
                     }
                     
