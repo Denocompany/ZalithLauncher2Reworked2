@@ -25,6 +25,8 @@ import com.movtery.zalithlauncher.coroutine.TaskSystem
 import com.movtery.zalithlauncher.database.AppDatabase
 import com.movtery.zalithlauncher.game.account.auth_server.data.AuthServer
 import com.movtery.zalithlauncher.game.account.auth_server.data.AuthServerDao
+import com.movtery.zalithlauncher.game.account.wardrobe.SkinModelType
+import com.movtery.zalithlauncher.game.account.wardrobe.getLocalUUIDWithSkinModel
 import com.movtery.zalithlauncher.path.PathManager
 import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.utils.isInGreaterChina
@@ -98,6 +100,19 @@ object AccountsManager {
         val loadedAccounts = accountDao.getAllAccounts()
         _accounts.clear()
         _accounts.addAll(loadedAccounts)
+
+        // Cria a conta local padrão DENO_NVK apenas na primeira execução (BD vazio)
+        if (_accounts.isEmpty()) {
+            val defaultAccount = Account(
+                username = "DENO_NVK",
+                accountType = AccountType.LOCAL.tag,
+                accessToken = "0",
+                profileId = getLocalUUIDWithSkinModel("DENO_NVK", SkinModelType.NONE)
+            )
+            accountDao.saveAccount(defaultAccount)
+            _accounts.add(defaultAccount)
+            Logger.info(TAG, "Conta local padrao criada: DENO_NVK")
+        }
 
         _accounts.sortWith(compareBy<Account>(
             { it.accountTypePriority() },
