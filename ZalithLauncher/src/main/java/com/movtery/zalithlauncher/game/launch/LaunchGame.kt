@@ -19,7 +19,6 @@
 package com.movtery.zalithlauncher.game.launch
 
 import android.content.Context
-import com.google.gson.JsonObject
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.coroutine.Task
 import com.movtery.zalithlauncher.coroutine.TaskSystem
@@ -37,21 +36,15 @@ import com.movtery.zalithlauncher.game.version.installed.GraphicsApi
 import com.movtery.zalithlauncher.game.version.installed.Version
 import com.movtery.zalithlauncher.game.version.installed.VersionFolders
 import com.movtery.zalithlauncher.game.version.mod.AllModReader
-import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.ui.activities.runGame
-import com.movtery.zalithlauncher.utils.GSON
-import com.movtery.zalithlauncher.utils.file.readText
 import com.movtery.zalithlauncher.utils.logging.Logger
 import com.movtery.zalithlauncher.utils.network.isNetworkAvailable
 import com.movtery.zalithlauncher.utils.network.toLocal
 import com.movtery.zalithlauncher.viewmodel.ErrorViewModel
 import io.ktor.client.plugins.HttpRequestTimeoutException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.net.ConnectException
 import java.net.UnknownHostException
 import java.nio.channels.UnresolvedAddressException
-import java.util.zip.ZipFile
 
 private const val TAG = "LaunchGame"
 
@@ -63,15 +56,12 @@ object LaunchGame {
         context: Context,
         version: Version,
         exitActivity: () -> Unit,
-        waitForVulkanChecker: suspend () -> Unit,
         submitError: (ErrorViewModel.ThrowableMessage) -> Unit
     ) {
         if (isLaunching) return
         val account = AccountsManager.currentAccountFlow.value ?: return
         isLaunching = true
 
-        //检查是否联网，根据这个条件决定是否登录账号
-        //以及，没有联网时，让微软账号、外置账号作为离线账号登录
         val hasNetwork = isNetworkAvailable(context)
 
         val downloadTask = createDownloadTask(
@@ -79,7 +69,6 @@ object LaunchGame {
             version = version,
             account = account,
             exitActivity = exitActivity,
-            waitForVulkanChecker = waitForVulkanChecker,
             submitError = submitError
         )
         fun startDownloadTask() {
@@ -99,7 +88,6 @@ object LaunchGame {
             TaskSystem.submitTask(loginTask)
         } else {
             if (!hasNetwork && !account.isLocalAccount()) {
-                //没联网时作为离线账号登录
                 version.offlineAccountLogin = true
             }
             startDownloadTask()
@@ -111,7 +99,6 @@ object LaunchGame {
         version: Version,
         account: Account,
         exitActivity: () -> Unit,
-        waitForVulkanChecker: suspend () -> Unit,
         submitError: (ErrorViewModel.ThrowableMessage) -> Unit
     ): Task {
         return MinecraftDownloader(
@@ -123,8 +110,7 @@ object LaunchGame {
             onCompletion = { task ->
                 task.updateProgress(-1f, null)
                 checkEnableTouchProxy(version)
-                task.updateMessage(R.string.game_vulkan_check_title)
-                checkVulkanCapabilities(version, waitForVulkanChecker)
+                checkVulkanMod(version)
 
                 runGame(context, version, account)
                 exitActivity()
@@ -154,42 +140,20 @@ object LaunchGame {
         }
     }
 
-    private suspend fun checkVulkanCapabilities(
-        version: Version,
-        waitForVulkanChecker: suspend () -> Unit
-    ) {
-        if (!AllSettings.autoVulkanChecker.getValue()) return
-
-        val api = version.getGraphicsApi()
-        if (api == GraphicsApi.OPENGL) return
-
-        //游戏可能使用Vulkan，检查版本是否为 26.2+
-        val clientJar = version.getClientJar()
-        if (clientJar.exists()) {
-            val hasVulkan = runCatching {
-                withContext(Dispatchers.IO) {
-                    //在客户端中读取数据版本
-                    ZipFile(clientJar).use { zip ->
-                        zip.getEntry("version.json")
-                            ?.readText(zip)
-                            ?.let { GSON.fromJson(it, JsonObject::class.java) }
-                            ?.let { json ->
-                                //https://zh.minecraft.wiki/w/%E7%89%88%E6%9C%AC%E4%BF%A1%E6%81%AF%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F
-                                json.get("world_version")?.asInt
-                            }
-                    }?.let { worldVersion ->
-                        //26.2-snapshot-1
-                        worldVersion >= 4883
-                    }
-                } ?: false
-            }.onFailure { e ->
-                Logger.warning(TAG, "Unable to determine the data version of this client Jar, possibly due to an outdated version.", e)
-            }.getOrDefault(false)
-
-            if (hasVulkan) {
-                //等待Vulkan检查完成
-                waitForVulkanChecker()
-            }
+    /**
+     * Verifica se o VulkanMod está instalado na pasta de mods quando o modo Vulkan está ativo.
+     * O VulkanMod substitui completamente o renderizador, sendo necessário para qualquer versão do MC
+     * com GraphicsApi.VULKAN configurado.
+     */
+    private suspend fun checkVulkanMod(version: Version) {
+        if (version.getGraphicsApi() != GraphicsApi.VULKAN) return
+        val modsDir = VersionFolders.MOD.getDir(version.getGameDir())
+        val reader = AllModReader(modsDir)
+        val hasVulkanMod = reader.readAllLocals().any { mod -> mod.id == "vulkanmod" }
+        if (!hasVulkanMod) {
+            Logger.warning(TAG, "⚠ Modo Vulkan ativo, mas VulkanMod nao foi encontrado na pasta de mods! O jogo pode nao renderizar corretamente.")
+        } else {
+            Logger.info(TAG, "✔ VulkanMod detectado na pasta de mods. Modo Vulkan ativo e pronto.")
         }
     }
 
@@ -240,3 +204,4 @@ object LaunchGame {
         }
     }
 }
+
