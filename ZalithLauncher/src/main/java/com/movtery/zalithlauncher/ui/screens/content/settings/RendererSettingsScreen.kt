@@ -31,8 +31,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -85,8 +85,12 @@ fun RendererSettingsScreen(
         Triple(NormalNavKey.Settings.Renderer, settingsScreenKey, false)
     ) { isVisible ->
         val context = LocalContext.current
-        val graphicsApi by AllSettings.graphicsApi.state.collectAsStateWithLifecycle()
-        val isVulkanMode = graphicsApi == GraphicsApi.VULKAN
+        var isVulkanMode by remember { mutableStateOf(AllSettings.graphicsApi.getValue() == GraphicsApi.VULKAN) }
+        LaunchedEffect(Unit) {
+            AllSettings.graphicsApi.state.collect { api ->
+                isVulkanMode = (api == GraphicsApi.VULKAN)
+            }
+        }
 
         AnimatedColumn(
             modifier = Modifier
