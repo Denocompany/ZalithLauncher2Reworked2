@@ -311,7 +311,6 @@ class MainActivity : BaseAppCompatActivity() {
                         exitActivity = {
                             this@MainActivity.finish()
                         },
-                        waitForVulkanChecker = vulkanCheckerViewModel::waitForVulkanChecker,
                         submitError = {
                             errorViewModel.showError(it)
                         },
