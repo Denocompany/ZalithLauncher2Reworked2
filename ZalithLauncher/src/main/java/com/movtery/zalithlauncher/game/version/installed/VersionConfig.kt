@@ -314,7 +314,7 @@ enum class GraphicsApi(
     DEFAULT_OPENGL(OPENGL.displayName, OPENGL.option),
     /** 强制切换到Vulkan，覆盖游戏原有设定 */
     @SerializedName("VULKAN")
-    VULKAN("Vulkan", "\"vulkan\"")
+    VULKAN("Modo Vulkan", "\"vulkan\"")
 }
 
 private fun getSettingStateNotNull(type: SettingState?) = type ?: SettingState.FOLLOW_GLOBAL
