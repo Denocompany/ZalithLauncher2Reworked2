@@ -355,7 +355,7 @@ private fun checkAndUsedJSPH(envMap: MutableMap<String, String>, runtime: Runtim
 private fun setRendererEnv(envMap: MutableMap<String, String>) {
     val renderer = Renderers.getCurrentRenderer()
     val rendererId = renderer.getRendererId()
-    val graphicsApi = AllSettings.graphicsApi.value
+    val graphicsApi = AllSettings.graphicsApi.getValue()
 
     if (rendererId.startsWith("opengles2")) {
         envMap["LIBGL_ES"] = "2"
