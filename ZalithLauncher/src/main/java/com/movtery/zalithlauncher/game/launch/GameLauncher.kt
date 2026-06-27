@@ -192,6 +192,11 @@ class GameLauncher(
 
     override fun progressFinalUserArgs(args: MutableList<String>, ramAllocation: Int) {
         super.progressFinalUserArgs(args, version.getRamAllocation(activity))
+        if (AllSettings.graphicsApi.getValue() == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
+            args.add("-Dglfwstub.initEgl=false")
+            args.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so")
+            return
+        }
         if (Renderers.isCurrentRendererValid()) {
             args.add("-Dorg.lwjgl.opengl.libname=${loadGraphicsLibrary()}")
         }
@@ -356,6 +361,19 @@ private fun setRendererEnv(envMap: MutableMap<String, String>) {
     val renderer = Renderers.getCurrentRenderer()
     val rendererId = renderer.getRendererId()
     val graphicsApi = AllSettings.graphicsApi.getValue()
+
+    // Modo Vulkan: skip total de GL/EGL — VulkanMod gerencia o rendering
+    if (graphicsApi == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
+        envMap["POJAV_RENDERER"] = "vulkan"
+        Logger.info(TAG, "╔══════════ VULKAN MODE ══════════")
+        Logger.info(TAG, "║ EGL: DESATIVADO")
+        Logger.info(TAG, "║ POJAVEXEC_EGL: nao setado")
+        Logger.info(TAG, "║ LIBGL_EGL: nao setado")
+        Logger.info(TAG, "║ POJAV_RENDERER: vulkan")
+        Logger.info(TAG, "║ Renderer: VulkanMod via libvulkan.so")
+        Logger.info(TAG, "╚═════════════════════════════════")
+        return
+    }
 
     if (rendererId.startsWith("opengles2")) {
         envMap["LIBGL_ES"] = "2"
