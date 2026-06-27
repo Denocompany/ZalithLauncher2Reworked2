@@ -165,7 +165,7 @@ class GameLauncher(
             envMap[loaderKey] = "1"
         }
         if (Renderers.isCurrentRendererValid()) {
-            setRendererEnv(envMap)
+            setRendererEnv(envMap, version.getGraphicsApi())
         }
         envMap["ZALITH_VERSION_CODE"] = BuildConfig.VERSION_CODE.toString()
         return envMap
@@ -188,7 +188,7 @@ class GameLauncher(
 
     override fun progressFinalUserArgs(args: MutableList<String>, ramAllocation: Int) {
         super.progressFinalUserArgs(args, version.getRamAllocation(activity))
-        if (AllSettings.graphicsApi.getValue() == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
+        if (version.getGraphicsApi() == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
             args.add("-Dglfwstub.initEgl=false")
             args.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so")
             return
@@ -352,10 +352,9 @@ private fun checkAndUsedJSPH(envMap: MutableMap<String, String>, runtime: Runtim
     }
 }
 
-private fun setRendererEnv(envMap: MutableMap<String, String>) {
+private fun setRendererEnv(envMap: MutableMap<String, String>, graphicsApi: com.movtery.zalithlauncher.game.version.installed.GraphicsApi) {
     val renderer = Renderers.getCurrentRenderer()
     val rendererId = renderer.getRendererId()
-    val graphicsApi = AllSettings.graphicsApi.getValue()
 
     // Modo Vulkan: skip total de GL/EGL — VulkanMod gerencia o rendering
     if (graphicsApi == com.movtery.zalithlauncher.game.version.installed.GraphicsApi.VULKAN) {
