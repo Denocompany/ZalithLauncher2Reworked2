@@ -20,7 +20,18 @@ static const char* g_LogTag = "GLBridge";
 static __thread gl_render_window_t* currentBundle;
 static EGLDisplay g_EglDisplay;
 
+
+// Verifica se o launcher está em modo Vulkan puro (sem EGL)
+static bool is_vulkan_mode() {
+    const char* renderer = getenv("POJAV_RENDERER");
+    return renderer != NULL && strcmp(renderer, "vulkan") == 0;
+}
+
 bool gl_init() {
+    if (is_vulkan_mode()) {
+        __android_log_print(ANDROID_LOG_INFO, g_LogTag, "Vulkan mode: ignorando inicializacao EGL");
+        return true;
+    }
     dlsym_EGL();
     g_EglDisplay = eglGetDisplay_p(EGL_DEFAULT_DISPLAY);
 
@@ -57,6 +68,12 @@ static void gl4esi_get_display_dimensions(int* width, int* height) {
 }
 
 gl_render_window_t* gl_init_context(gl_render_window_t *share) {
+    if (is_vulkan_mode()) {
+        __android_log_print(ANDROID_LOG_INFO, g_LogTag, "Vulkan mode: ignorando criacao de contexto EGL");
+        gl_render_window_t* bundle = malloc(sizeof(gl_render_window_t));
+        memset(bundle, 0, sizeof(gl_render_window_t));
+        return bundle;
+    }
     gl_render_window_t* bundle = malloc(sizeof(gl_render_window_t));
     memset(bundle, 0, sizeof(gl_render_window_t));
     EGLint egl_attributes[] = { EGL_BLUE_SIZE, 8,
@@ -170,6 +187,10 @@ void gl_swap_surface(gl_render_window_t* bundle) {
 }
 
 void gl_make_current(gl_render_window_t* bundle) {
+    if (is_vulkan_mode()) {
+        currentBundle = bundle;
+        return;
+    }
 
     if (bundle == NULL)
     {
@@ -208,6 +229,7 @@ void gl_make_current(gl_render_window_t* bundle) {
 }
 
 void gl_swap_buffers() {
+    if (is_vulkan_mode()) return;
     if (currentBundle->state == STATE_RENDERER_NEW_WINDOW)
     {
         eglMakeCurrent_p(g_EglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -242,6 +264,7 @@ void gl_setup_window() {
 }
 
 void gl_swap_interval(int swapInterval) {
+    if (is_vulkan_mode()) return;
     eglSwapInterval_p(g_EglDisplay, swapInterval);
 }
 
@@ -261,4 +284,5 @@ Java_org_lwjgl_opengl_PojavRendererInit_nativeInitGl4esInternals(JNIEnv *env, jc
 
 #undef GETSYM
 }
+
 
